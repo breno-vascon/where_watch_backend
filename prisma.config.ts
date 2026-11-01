@@ -1,0 +1,18 @@
+import { existsSync } from 'node:fs';
+import { defineConfig } from 'prisma/config';
+
+// O CLI do Prisma (migrate, studio, db) usa a conexão direta.
+// Em runtime a aplicação usa DATABASE_URL (pooler), via adapter (src/shared/database).
+if (existsSync('.env')) {
+  process.loadEnvFile('.env');
+}
+
+export default defineConfig({
+  schema: 'prisma/schema.prisma',
+  migrations: {
+    path: 'prisma/migrations',
+  },
+  datasource: {
+    url: process.env['DIRECT_URL'] ?? process.env['DATABASE_URL'],
+  },
+});

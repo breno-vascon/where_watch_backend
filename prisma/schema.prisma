@@ -1,0 +1,38 @@
+// Convenção: snake_case no banco (@map/@@map), camelCase no código.
+
+generator client {
+  provider             = "prisma-client"
+  output               = "../src/generated/prisma"
+  moduleFormat         = "esm"
+  importFileExtension  = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum JobRunStatus {
+  RUNNING
+  SUCCESS
+  FAILED
+  SKIPPED_LOCKED
+}
+
+enum JobTrigger {
+  TICK
+  MANUAL
+}
+
+model JobRun {
+  id         String       @id @default(uuid()) @db.Uuid
+  jobName    String       @map("job_name")
+  startedAt  DateTime     @default(now()) @map("started_at") @db.Timestamptz(3)
+  finishedAt DateTime?    @map("finished_at") @db.Timestamptz(3)
+  status     JobRunStatus
+  trigger    JobTrigger
+  stats      Json?
+  error      String?
+
+  @@index([jobName, startedAt])
+  @@map("job_runs")
+}

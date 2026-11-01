@@ -1,0 +1,121 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "ignorePatterns": [
+    "src/generated/**",
+    "dist/**"
+  ],
+  "env": {
+    "node": true
+  },
+  "rules": {
+    "typescript/no-explicit-any": "error",
+    "typescript/no-floating-promises": "error",
+    "typescript/consistent-type-imports": "off",
+    "eqeqeq": "error",
+    "no-console": "error"
+  },
+  "overrides": [
+    {
+      "files": [
+        "src/modules/*/controllers/**/*.ts"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "**/adapters/**",
+                  "**/ports/**"
+                ],
+                "message": "Controller só conversa com usecases e DTOs."
+              },
+              {
+                "group": [
+                  "@prisma/*",
+                  "**/generated/**",
+                  "pg"
+                ],
+                "message": "Controller não acessa banco."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/modules/*/usecases/**/*.ts"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "**/adapters/**",
+                  "**/controllers/**"
+                ],
+                "message": "Usecase depende só de domain e ports."
+              },
+              {
+                "group": [
+                  "@prisma/*",
+                  "**/generated/**",
+                  "pg",
+                  "@nestjs/swagger",
+                  "**/shared/database/**"
+                ],
+                "message": "Usecase não conhece banco, HTTP ou SDKs; use um port."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/modules/*/domain/**/*.ts",
+        "src/modules/*/ports/**/*.ts"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "**/adapters/**",
+                  "**/usecases/**",
+                  "**/controllers/**"
+                ],
+                "message": "Domain/ports não dependem de camadas externas."
+              },
+              {
+                "group": [
+                  "@nestjs/*",
+                  "@prisma/*",
+                  "**/generated/**",
+                  "pg",
+                  "**/shared/database/**"
+                ],
+                "message": "Domain/ports são TypeScript puro, sem framework."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/*.spec.ts",
+        "test/**/*.ts"
+      ],
+      "rules": {
+        "no-restricted-imports": "off"
+      }
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+# Dependências e build
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Prisma client gerado (recriado no build com `prisma generate`)
+/src/generated/
+
+# Variáveis de ambiente: nunca versionar (exceto o exemplo)
+.env
+.env.*
+!.env.example
+
+# Documentação e arquivos de referência ficam fora do repositório
+/docs/
+/*.html
+
+# Dumps de banco
+*.dump
+*.sql.gz
+*.backup
+
+# Logs e SO
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# Editores
+.idea/
+.vscode/*
+!.vscode/extensions.json

@@ -1,0 +1,37 @@
+name: DB backup
+
+# O plano grátis do Supabase não tem backup automático.
+# Requer o secret DIRECT_URL (conexão direta ou session pooler, porta 5432).
+on:
+  schedule:
+    - cron: '0 6 * * 1' # segundas, 06:00 UTC (03:00 BRT)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # Deve ser >= à versão major do Postgres do projeto Supabase
+  # (Supabase > Settings > Infrastructure).
+  PG_MAJOR: '17'
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: pg_dump
+        env:
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+        run: |
+          test -n "$DIRECT_URL" || { echo "Secret DIRECT_URL não configurado"; exit 1; }
+          file="where-watch-$(date -u +%Y%m%dT%H%MZ).dump"
+          docker run --rm -e DIRECT_URL -v "$PWD:/out" "postgres:${PG_MAJOR}" \
+            sh -c "pg_dump \"\$DIRECT_URL\" --format=custom --no-owner --no-privileges --schema=public --file=/out/$file"
+          echo "BACKUP_FILE=$file" >> "$GITHUB_ENV"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BACKUP_FILE }}
+          path: ${{ env.BACKUP_FILE }}
+          retention-days: 90
+          if-no-files-found: error

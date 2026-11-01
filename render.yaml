@@ -1,0 +1,29 @@
+# Blueprint do Render: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: where-watch-api
+    runtime: node
+    plan: free
+    # Escolher a região mais próxima do projeto Supabase
+    # (Supabase em sa-east-1/São Paulo → virginia é a mais próxima no Render).
+    region: virginia
+    branch: main
+    buildCommand: npm ci && npx prisma generate && npx prisma migrate deploy && npm run build
+    startCommand: node dist/main.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: NODE_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: info
+      - key: APP_TIMEZONE
+        value: America/Sao_Paulo
+      # Segredos: preenchidos no painel do Render (não versionados)
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: INTERNAL_JOBS_TOKEN
+        sync: false

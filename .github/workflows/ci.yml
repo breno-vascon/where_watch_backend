@@ -1,18 +1,27 @@
-name: CI
+name: CI/CD
 
+# Roda somente quando um pull request é MERGEADO na main:
+# build + testes do commit de merge e, se tudo passar, deploy no Render.
+# Push direto na main não dispara este workflow.
 on:
-  push:
-    branches: [main]
   pull_request:
+    types: [closed]
+    branches: [main]
 
 permissions:
   contents: read
 
 jobs:
   check:
+    name: Build e testes
+    # PR fechado sem merge não roda nada.
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Commit resultante do merge na main.
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
 
       - uses: actions/setup-node@v4
         with:
@@ -27,3 +36,29 @@ jobs:
       - run: npm test
       - run: npm run test:e2e
       - run: npm run build
+
+  deploy:
+    name: Deploy no Render
+    needs: check
+    runs-on: ubuntu-latest
+    # Um deploy por vez; um merge novo cancela o deploy pendente anterior.
+    concurrency:
+      group: render-deploy
+      cancel-in-progress: true
+    environment: production
+    steps:
+      - name: Disparar deploy hook
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        run: |
+          test -n "$RENDER_DEPLOY_HOOK_URL" || { echo "::error::Secret RENDER_DEPLOY_HOOK_URL não configurado"; exit 1; }
+          # Deploya exatamente o commit de merge que passou nos testes.
+          status=$(curl -sS -o response.json -w '%{http_code}' -X POST \
+            "${RENDER_DEPLOY_HOOK_URL}&ref=${MERGE_SHA}")
+          echo "Render respondeu HTTP $status"
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            echo "::error::Falha ao disparar o deploy (HTTP $status)"
+            exit 1
+          fi
+          echo "Deploy disparado para o commit ${MERGE_SHA}"

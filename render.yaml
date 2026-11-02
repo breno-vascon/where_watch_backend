@@ -8,6 +8,9 @@ services:
     # (Supabase em sa-east-1/São Paulo → virginia é a mais próxima no Render).
     region: virginia
     branch: main
+    # O deploy é disparado pelo GitHub Actions (deploy hook) só depois que
+    # build e testes passam. Sem isso, o Render deployaria a cada push.
+    autoDeployTrigger: "off"
     buildCommand: npm ci && npx prisma generate && npx prisma migrate deploy && npm run build
     startCommand: node dist/main.js
     healthCheckPath: /health

@@ -1,7 +1,7 @@
 name: CI/CD
 
 # Roda somente quando um pull request é MERGEADO na main:
-# build + testes do commit de merge e, se tudo passar, deploy no Render.
+# build -> testes -> deploy no Render, cada etapa só roda se a anterior passar.
 # Push direto na main não dispara este workflow.
 on:
   pull_request:
@@ -12,8 +12,8 @@ permissions:
   contents: read
 
 jobs:
-  check:
-    name: Build e testes
+  build:
+    name: Build
     # PR fechado sem merge não roda nada.
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
@@ -33,13 +33,30 @@ jobs:
       - run: npm run format:check
       - run: npm run lint
       - run: npm run typecheck
+      - run: npm run build
+
+  test:
+    name: Testes
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+      - run: npx prisma generate
       - run: npm test
       - run: npm run test:e2e
-      - run: npm run build
 
   deploy:
     name: Deploy no Render
-    needs: check
+    needs: [build, test]
     runs-on: ubuntu-latest
     # Um deploy por vez; um merge novo cancela o deploy pendente anterior.
     concurrency:
